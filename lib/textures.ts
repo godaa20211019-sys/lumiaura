@@ -503,10 +503,6 @@ const TEXTURE_RECIPES: Record<
   'rose-quartz': { draw: drawFrost },
   aquamarine: { draw: drawFrost },
   'green-ghost': { draw: drawFrost },
-  obsidian: {
-    draw: (ctx, size) => drawSpeckle(ctx, size, '#151318', '210,200,220', 771),
-    mapColor: true,
-  },
   'lapis-lazuli': {
     draw: (ctx, size) => drawSpeckle(ctx, size, '#1c3a72', '236,214,140', 553),
     mapColor: true,

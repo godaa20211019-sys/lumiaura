@@ -1,21 +1,19 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Aurum Atelier — 360° 水晶手串 3D 客製化",
+  title: "靈曜閣 Lumiaura — 以珠造物 不逐俗同",
   description:
-    "以 Three.js 即時渲染的水晶手串配置器：自由挑選水晶、調整手圍、預覽 360 度折射光澤並即時結帳。",
+    "靈曜閣 Lumiaura：手機優先的 360° 3D 水晶手串 DIY 定制與分享工作室，設計完成後可一鍵產生美圖卡並分享到 WhatsApp 與 Instagram。",
+  applicationName: "靈曜閣 Lumiaura",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -24,10 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="zh-Hant"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="zh-Hant" className="h-full antialiased">
       <body className="min-h-full">{children}</body>
     </html>
   );

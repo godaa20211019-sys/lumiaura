@@ -84,7 +84,6 @@ function buildBead(material: Material, size: number, id?: string): StudioBead {
     inner: material.inner,
     attenuation: material.attenuation,
     size: size as PlacedBead['size'],
-    price: 0,
     type: material.shape === 'disc' ? 'spacer' : 'crystal',
     meaning: material.meaning,
     category: material.category,
