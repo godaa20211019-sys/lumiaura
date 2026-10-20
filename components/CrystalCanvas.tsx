@@ -39,17 +39,22 @@ function CameraRig() {
     return Math.max(dV, dH, 40);
   }, [layout.radius, layout.positions, camera.fov, size.width, size.height]);
 
+  // 只保留最新值：只有「切換視角 / 畫布尺寸改變」才重新取景，
+  // 珠子增減或拖曳換位時不再自動縮放，避免拖曳時畫面忽大忽小。
+  const fitRef = useRef(fitDistance);
+  fitRef.current = fitDistance;
+
   useEffect(() => {
     const preset = VIEW_PRESETS[viewMode] ?? VIEW_PRESETS.top;
     const dir = new THREE.Vector3(...preset.pos).normalize();
-    desired.current = dir.multiplyScalar(fitDistance);
+    desired.current = dir.multiplyScalar(fitRef.current);
     desiredTarget.current = new THREE.Vector3(...preset.target);
     if (!initialised.current) {
       camera.position.copy(desired.current);
       target.current.copy(desiredTarget.current);
       initialised.current = true;
     }
-  }, [viewMode, camera, fitDistance]);
+  }, [viewMode, camera, size.width, size.height]);
 
   useFrame((_, delta) => {
     if (!desired.current) return;

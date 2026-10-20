@@ -295,6 +295,8 @@ function DragManager() {
   const layout = useLayout();
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
+  /** 發起拖曳的那根手指（其他手指的移動一律忽略） */
+  const dragPointerRef = useRef<number | null>(null);
 
   // 按下：以「指尖最近的珠子」為拖曳起點（容忍按在珠子的邊緣附近）
   useEffect(() => {
@@ -320,6 +322,7 @@ function DragManager() {
       }
       if (best) {
         // 在同一事件內立即停用 OrbitControls，避免拖曳同時旋轉場景
+        dragPointerRef.current = ev.pointerId;
         if (controls) controls.enabled = false;
         beginDrag(best);
       }
@@ -340,6 +343,7 @@ function DragManager() {
     const norm = (a: number) => ((a % twoPi) + twoPi) % twoPi;
 
     const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== dragPointerRef.current) return;
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       ndc.set(
@@ -348,6 +352,11 @@ function DragManager() {
       );
       raycaster.setFromCamera(ndc, camera);
       if (!raycaster.ray.intersectPlane(plane, hit)) return;
+
+      // 手指離圓環太遠（跑到環內或環外）時不換位，避免珠子亂跳
+      const d = Math.hypot(hit.x, hit.z);
+      const R = layoutRef.current.radius;
+      if (R > 0 && (d < R * 0.6 || d > R * 1.55)) return;
 
       const ang = norm(Math.atan2(hit.z, hit.x));
       const { positions } = layoutRef.current;
@@ -365,7 +374,9 @@ function DragManager() {
       if (best >= 0) moveBeadToIndex(dragBeadId, best);
     };
 
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
+      if (ev.pointerId !== dragPointerRef.current) return;
+      dragPointerRef.current = null;
       endDrag();
       if (controls) controls.enabled = true;
     };
