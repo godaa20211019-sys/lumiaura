@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStudioStore, useLayout } from '@/store/useStudioStore';
 import type { PlacedBead } from '@/lib/layout';
@@ -96,6 +96,8 @@ function BeadMesh({
   };
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    // 拖曳換位後的 click 不應再次改變選取
+    if (Date.now() - useStudioStore.getState().dragEndedAt < 250) return;
     onSelect(bead.id);
   };
 
@@ -277,6 +279,110 @@ function BraceletBody() {
   );
 }
 
+/**
+ * 拖曳換位：在畫布上「按下」時找出離手指最近的珠子作為起點，
+ * 拖動時把手指角度映射回最近的手串序位，即時重排珠子順序，
+ * 做到「點一下 → 直接拖到其他位置」。
+ */
+function DragManager() {
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls) as { enabled: boolean } | null;
+  const dragBeadId = useStudioStore((s) => s.dragBeadId);
+  const beginDrag = useStudioStore((s) => s.beginDrag);
+  const moveBeadToIndex = useStudioStore((s) => s.moveBeadToIndex);
+  const endDrag = useStudioStore((s) => s.endDrag);
+  const layout = useLayout();
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+
+  // 按下：以「指尖最近的珠子」為拖曳起點（容忍按在珠子的邊緣附近）
+  useEffect(() => {
+    const el = gl.domElement;
+    const onDown = (ev: PointerEvent) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      if (useStudioStore.getState().dragBeadId) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const v = new THREE.Vector3();
+      let best: string | null = null;
+      let bestD = Infinity;
+      const tolerance = Math.max(28, rect.height * 0.045);
+      for (const p of layoutRef.current.positions) {
+        v.set(p.x, p.y, p.z).project(camera);
+        const sx = rect.left + (v.x * 0.5 + 0.5) * rect.width;
+        const sy = rect.top + (-v.y * 0.5 + 0.5) * rect.height;
+        const d = Math.hypot(ev.clientX - sx, ev.clientY - sy);
+        if (d < tolerance && d < bestD) {
+          bestD = d;
+          best = p.id;
+        }
+      }
+      if (best) {
+        // 在同一事件內立即停用 OrbitControls，避免拖曳同時旋轉場景
+        if (controls) controls.enabled = false;
+        beginDrag(best);
+      }
+    };
+    el.addEventListener('pointerdown', onDown);
+    return () => el.removeEventListener('pointerdown', onDown);
+  }, [gl, camera, controls, beginDrag]);
+
+  // 拖曳中：手指角度 → 最近序位 → 重新排列；放開即結束
+  useEffect(() => {
+    if (!dragBeadId) return;
+    const el = gl.domElement;
+    const raycaster = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const ndc = new THREE.Vector2();
+    const hit = new THREE.Vector3();
+    const twoPi = Math.PI * 2;
+    const norm = (a: number) => ((a % twoPi) + twoPi) % twoPi;
+
+    const onMove = (ev: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      ndc.set(
+        ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+        -(((ev.clientY - rect.top) / rect.height) * 2 - 1),
+      );
+      raycaster.setFromCamera(ndc, camera);
+      if (!raycaster.ray.intersectPlane(plane, hit)) return;
+
+      const ang = norm(Math.atan2(hit.z, hit.x));
+      const { positions } = layoutRef.current;
+      let best = -1;
+      let bestD = Infinity;
+      for (let i = 0; i < positions.length; i++) {
+        const center = norm(positions[i].angle + positions[i].arcAngle / 2);
+        const raw = Math.abs(ang - center);
+        const dist = Math.min(raw, twoPi - raw);
+        if (dist < bestD) {
+          bestD = dist;
+          best = i;
+        }
+      }
+      if (best >= 0) moveBeadToIndex(dragBeadId, best);
+    };
+
+    const onUp = () => {
+      endDrag();
+      if (controls) controls.enabled = true;
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, [dragBeadId, gl, camera, controls, moveBeadToIndex, endDrag]);
+
+  return null;
+}
+
 export default function BraceletScene() {
   const group = useRef<THREE.Group>(null);
   const autoRotate = useStudioStore((s) => s.autoRotate);
@@ -304,6 +410,7 @@ export default function BraceletScene() {
   return (
     <group ref={group}>
       <BraceletBody />
+      <DragManager />
     </group>
   );
 }

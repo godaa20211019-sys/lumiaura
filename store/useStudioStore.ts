@@ -33,6 +33,10 @@ interface StudioState {
   weight: number;
   selectedBeadId: string | null;
   hoveredBeadId: string | null;
+  /** 拖曳中的珠子（null 表示沒有拖曳） */
+  dragBeadId: string | null;
+  /** 最近一次拖曳結束的時間戳，用於抑制誤觸點擊 */
+  dragEndedAt: number;
   viewMode: ViewMode;
   autoRotate: boolean;
   /** 面板分類 */
@@ -56,6 +60,11 @@ interface StudioState {
   clearPendant: () => void;
   selectBead: (id: string | null) => void;
   hoverBead: (id: string | null) => void;
+  /** 開始拖曳某顆珠子（同時選取它） */
+  beginDrag: (id: string) => void;
+  endDrag: () => void;
+  /** 直接把珠子移動到指定序位（拖曳換位用） */
+  moveBeadToIndex: (id: string, targetIndex: number) => void;
   setTargetWrist: (cm: number) => void;
   setWraps: (n: 1 | 2 | 3) => void;
   setHeight: (cm: number) => void;
@@ -139,6 +148,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   weight: 52,
   selectedBeadId: null,
   hoveredBeadId: null,
+  dragBeadId: null,
+  dragEndedAt: 0,
   viewMode: 'top',
   autoRotate: false,
   category: 'bead',
@@ -189,6 +200,21 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   selectBead: (id) => set({ selectedBeadId: id }),
   hoverBead: (id) => set({ hoveredBeadId: id }),
+
+  beginDrag: (id) => set({ dragBeadId: id, selectedBeadId: id, hoveredBeadId: null }),
+  endDrag: () => set({ dragBeadId: null, dragEndedAt: Date.now() }),
+
+  moveBeadToIndex: (id, targetIndex) =>
+    set((s) => {
+      const from = s.beads.findIndex((b) => b.id === id);
+      if (from < 0) return {};
+      const to = Math.max(0, Math.min(s.beads.length - 1, targetIndex));
+      if (to === from) return {};
+      const next = [...s.beads];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return { beads: next };
+    }),
 
   setTargetWrist: (cm) => set({ targetWrist: Math.min(20, Math.max(13, cm)) }),
   setWraps: (n) => set({ wraps: n }),

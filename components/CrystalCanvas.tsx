@@ -86,6 +86,7 @@ function AdaptiveShadow() {
 }
 
 export default function CrystalCanvas() {
+  const dragging = useStudioStore((s) => s.dragBeadId !== null);
   return (
     <Canvas
       dpr={[1, 2]}
@@ -149,6 +150,7 @@ export default function CrystalCanvas() {
       <CameraRig />
 
       <OrbitControls
+        enabled={!dragging}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
