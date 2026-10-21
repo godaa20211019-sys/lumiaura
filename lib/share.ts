@@ -30,7 +30,7 @@ export function captureCanvas(canvas: HTMLCanvasElement | null): string | null {
 /** 產生分享文字 */
 export function buildShareText(summary: DesignSummary): string {
   const wrapText = summary.wraps > 1 ? `（${summary.wraps}圈）` : '';
-  return `✨ 我的獨家水晶手串設計：${summary.combo}${wrapText} (共${summary.count}顆)，請幫我看看這串！\n\n—— 來自「靈曜閣 Lumiaura」以珠造物 不逐俗同`;
+  return `✨ 我的獨家水晶手串設計：${summary.combo}${wrapText} (共${summary.count}顆)，請幫我看看這串！\n\n—— 來自「星軌所 Lumiaura」以珠造物 不逐俗同`;
 }
 
 /** 產生設計口令（可複製給客服快速還原設計） */
@@ -89,7 +89,7 @@ export function buildDesignCard(
   ctx.textAlign = 'center';
   ctx.fillStyle = '#2f2b28';
   ctx.font = '600 34px "PingFang SC", "Noto Sans TC", sans-serif';
-  ctx.fillText('靈曜閣', canvas.width / 2, y);
+  ctx.fillText('星軌所', canvas.width / 2, y);
 
   y += 30;
   ctx.fillStyle = '#a9a096';

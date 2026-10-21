@@ -24,7 +24,7 @@ export default function StudioHeader() {
 
       {/* 中間：品牌（精準置中） */}
       <h1 className="px-2 text-[17px] leading-none font-semibold tracking-[0.22em] text-[#2f2b28]">
-        靈曜閣
+        星軌所
       </h1>
 
       {/* 右側：3D / 俯視視角切換 */}

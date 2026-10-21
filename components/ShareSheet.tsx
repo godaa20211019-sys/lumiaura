@@ -58,7 +58,7 @@ export default function ShareSheet() {
 
   const handleDownload = () => {
     if (!cardUrl) return;
-    downloadImage(cardUrl, '靈曜閣-我的手串設計.png');
+    downloadImage(cardUrl, '星軌所-我的手串設計.png');
   };
 
   const handleCopy = async () => {
